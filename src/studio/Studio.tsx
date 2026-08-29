@@ -11,7 +11,7 @@ import { submitKlingTask, checkKlingTask } from './klingClient';
 const SK = 'kvs_settings_v1';
 const PK = 'kvs_project_v1';
 
-const defaultSettings: KlingSettings = { accessKey: '', secretKey: '', quality: 'std', clipDuration: 5 };
+const defaultSettings: KlingSettings = { apiKey: '', quality: 'std', clipDuration: 5 };
 
 function loadSettings(): KlingSettings {
   try { const s = localStorage.getItem(SK); return s ? JSON.parse(s) : defaultSettings; }
@@ -99,7 +99,7 @@ export default function Studio() {
     if (!scene.taskId) return;
     const iv = setInterval(async () => {
       try {
-        const r = await checkKlingTask(scene.taskId!, settings.accessKey, settings.secretKey);
+        const r = await checkKlingTask(scene.taskId!, settings.apiKey);
         if (r.status === 'succeed') {
           clearInterval(iv); delete pollMap.current[scene.id];
           setScenes(prev => prev.map(s =>
@@ -122,9 +122,9 @@ export default function Studio() {
 
   /* ── generate all ──────────────────────────────────────────────────────── */
   const handleGenerate = useCallback(async () => {
-    if (!settings.accessKey || !settings.secretKey) {
+    if (!settings.apiKey) {
       setDraft(settings); setShowSett(true);
-      toast.error('Add your Kling API keys first');
+      toast.error('Add your Kling API key first');
       return;
     }
     if (!scenes.length) { toast.error('Parse your script first'); return; }
@@ -139,7 +139,7 @@ export default function Studio() {
         setScenes(prev => prev.map(s => s.id === scene.id ? { ...s, status: 'generating' } : s));
         const prompt = buildPrompt(scene);
         const neg    = getNegativePrompt();
-        const { taskId } = await submitKlingTask(prompt, neg, settings.accessKey, settings.secretKey, settings.quality, settings.clipDuration);
+        const { taskId } = await submitKlingTask(prompt, neg, settings.apiKey, settings.quality, settings.clipDuration);
         setScenes(prev => prev.map(s => s.id === scene.id ? { ...s, taskId } : s));
         pollScene({ ...scene, taskId });
         await new Promise(r => setTimeout(r, 1500));
@@ -226,7 +226,7 @@ export default function Studio() {
                 {doneScenes.length}/{scenes.length} ready
               </span>
             )}
-            {!settings.accessKey && (
+            {!settings.apiKey && (
               <span className="text-xs bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 px-2 py-1 rounded-full border border-amber-300 dark:border-amber-700">
                 No API key
               </span>
@@ -556,21 +556,16 @@ export default function Studio() {
             </div>
 
             <div className="p-5 space-y-4">
-              {[
-                { label: 'Access Key', key: 'accessKey' as const, placeholder: 'Your Kling access key' },
-                { label: 'Secret Key', key: 'secretKey' as const, placeholder: 'Your Kling secret key' },
-              ].map(({ label, key, placeholder }) => (
-                <div key={key}>
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-1.5">{label}</label>
-                  <input
-                    type="password"
-                    value={draft[key]}
-                    onChange={e => setDraft(d => ({ ...d, [key]: e.target.value }))}
-                    placeholder={placeholder}
-                    className="w-full rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-sm focus:outline-none focus:border-violet-500 dark:text-white transition-colors"
-                  />
-                </div>
-              ))}
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-1.5">API Key</label>
+                <input
+                  type="password"
+                  value={draft.apiKey}
+                  onChange={e => setDraft(d => ({ ...d, apiKey: e.target.value }))}
+                  placeholder="api-key-kling-…"
+                  className="w-full rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-sm focus:outline-none focus:border-violet-500 dark:text-white transition-colors"
+                />
+              </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -598,12 +593,13 @@ export default function Studio() {
               </div>
 
               <div className="bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-200 dark:border-amber-900 rounded-2xl p-3 text-xs text-amber-800 dark:text-amber-300 space-y-1">
-                <p className="font-black">🔑 How to get Kling API keys:</p>
+                <p className="font-black">🔑 How to get your Kling API key:</p>
                 <p>1. Sign up at <strong>klingai.com</strong></p>
-                <p>2. Go to your account → <strong>API</strong></p>
-                <p>3. Create an <strong>Access Key</strong> + <strong>Secret Key</strong></p>
-                <p>4. Add $10 credits to start (~3 full videos)</p>
-                <p className="text-amber-600 dark:text-amber-400">🔒 Keys stay in your browser only</p>
+                <p>2. Go to <strong>API Platform → API Key</strong></p>
+                <p>3. Click <strong>"Create a new API Key"</strong></p>
+                <p>4. Copy the key (starts with <code>api-key-kling-</code>)</p>
+                <p>5. Add $10 credits to start (~3 full videos)</p>
+                <p className="text-amber-600 dark:text-amber-400">🔒 Key stays in your browser only</p>
               </div>
             </div>
 

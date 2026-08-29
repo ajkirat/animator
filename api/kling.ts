@@ -1,40 +1,22 @@
 /**
  * api/kling.ts — Vercel Serverless Function
  * Proxies requests to Kling AI's video generation API.
- * No Supabase needed — just deploy to Vercel.
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createHmac } from 'crypto';
 
 const KLING_BASE = 'https://api.klingai.com';
 
-function makeJWT(accessKey: string, secretKey: string): string {
-  const now = Math.floor(Date.now() / 1000);
-
-  const b64url = (s: string) =>
-    Buffer.from(s).toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-
-  const header  = b64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-  const payload = b64url(JSON.stringify({ iss: accessKey, exp: now + 1800, nbf: now - 5 }));
-  const msg     = `${header}.${payload}`;
-
-  const sig = createHmac('sha256', secretKey).update(msg).digest('base64')
-    .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-
-  return `${msg}.${sig}`;
-}
-
 const cors = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return res.status(200).setHeader('Access-Control-Allow-Origin', '*')
+    return res.status(200)
+      .setHeader('Access-Control-Allow-Origin', '*')
       .setHeader('Access-Control-Allow-Headers', cors['Access-Control-Allow-Headers'])
       .setHeader('Access-Control-Allow-Methods', cors['Access-Control-Allow-Methods'])
       .end();
@@ -42,14 +24,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const body = req.body ?? {};
-    const { action, accessKey, secretKey } = body;
+    const { action, apiKey } = body;
 
-    if (!accessKey || !secretKey) {
-      return res.status(400).set(cors).json({ error: 'Missing Kling credentials' });
+    if (!apiKey) {
+      return res.status(400).set(cors).json({ error: 'Missing Kling API key' });
     }
 
-    const jwt  = makeJWT(accessKey, secretKey);
-    const auth = { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' };
+    const auth = { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
 
     /* ── CREATE ─────────────────────────────────────────────────────────── */
     if (action === 'create') {

@@ -33,8 +33,7 @@ export interface ParsedScene {
 }
 
 export interface KlingSettings {
-  accessKey: string;
-  secretKey: string;
+  apiKey: string;
   quality: 'std' | 'pro';
   clipDuration: 5 | 10;
 }
