@@ -3,6 +3,7 @@ import type { ParsedScene } from './types';
 import { CHARACTERS } from './data';
 
 const BG_KEYWORDS: Record<string, string> = {
+  picnic:'picnic', blanket:'picnic', basket:'picnic',
   garden:'garden', meadow:'garden', park:'garden', yard:'garden', outside:'garden', outdoors:'garden',
   forest:'forest', woods:'forest', jungle:'forest', trees:'forest',
   beach:'beach', ocean:'beach', sea:'beach', sand:'beach', shore:'beach',
@@ -46,8 +47,17 @@ function splitIntoBlocks(script: string): string[] {
 
   for (const line of lines) {
     const t = line.trim();
+
+    // Skip CHARACTERS / STYLE header blocks (between triple backticks or CHARACTERS: lines)
+    if (/^```/.test(t) || /^CHARACTERS:/i.test(t) || /^STYLE:/i.test(t)) continue;
+
     const isHeader =
+      // "1 — 0:00–0:10" or "2 — 0:10–0:20" numbered shot format
+      /^\d+\s*[—–-]\s*\d+:\d+/.test(t) ||
+      // "Scene 1:" or "Scene 1 —"
       /^(scene\s*\d+\s*[:\-–])/i.test(t) ||
+      // Shot 1:
+      /^(shot\s*\d+\s*[:\-–])/i.test(t) ||
       /^\[.+\]$/.test(t) ||
       /^-{3,}$/.test(t);
 
@@ -59,9 +69,12 @@ function splitIntoBlocks(script: string): string[] {
     if (!isHeader) {
       if (t) cur.push(t);
     } else {
+      // Strip the header label, keep only descriptive content after it
       const content = t
-        .replace(/^scene\s*\d+\s*[:\-–]\s*/i, '')
-        .replace(/^\[(.+)\]$/, '$1');
+        .replace(/^\d+\s*[—–-]\s*[\d:–—]+\s*/g, '')   // "1 — 0:00–0:10"
+        .replace(/^(scene|shot)\s*\d+\s*[:\-–]\s*/i, '')
+        .replace(/^\[(.+)\]$/, '$1')
+        .trim();
       if (content) cur.push(content);
     }
   }
@@ -96,7 +109,7 @@ export function parseScript(
       action: action || block.slice(0, 200),
       narration: narration || block.replace(/"[^"]+"/g, '').trim().slice(0, 150),
       status: 'pending',
-      duration: 5,
+      duration: 10,
     };
   });
 }
