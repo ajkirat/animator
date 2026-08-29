@@ -40,8 +40,17 @@ function extractNarration(text: string): { narration: string; action: string } {
   return { narration, action };
 }
 
-function splitIntoBlocks(script: string): string[] {
+// Find where the numbered shots begin (e.g. "1 —" or "1.") and strip everything before
+function stripPreamble(script: string): string {
   const lines = script.split('\n');
+  const firstShot = lines.findIndex(l => /^\s*1\s*[—–\-\.]\s/.test(l));
+  if (firstShot > 0) return lines.slice(firstShot).join('\n');
+  return script;
+}
+
+function splitIntoBlocks(script: string): string[] {
+  const cleaned = stripPreamble(script);
+  const lines = cleaned.split('\n');
   const blocks: string[] = [];
   let cur: string[] = [];
 
@@ -94,7 +103,7 @@ export function parseScript(
   defaultBg: string,
   selectedChars: string[]
 ): ParsedScene[] {
-  const blocks = splitIntoBlocks(script);
+  const blocks = splitIntoBlocks(script.replace(/```[\s\S]*?```/g, ''));
   return blocks.map((block, i) => {
     const { narration, action } = extractNarration(block);
     let chars = detectCharacters(block);
