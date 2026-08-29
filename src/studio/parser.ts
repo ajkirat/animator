@@ -40,16 +40,31 @@ function extractNarration(text: string): { narration: string; action: string } {
   return { narration, action };
 }
 
-// Find where the numbered shots begin (e.g. "1 —" or "1.") and strip everything before
-function stripPreamble(script: string): string {
+// Strip everything before shot 1 and after the last numbered shot block
+function stripPreambleAndPostamble(script: string): string {
   const lines = script.split('\n');
-  const firstShot = lines.findIndex(l => /^\s*1\s*[—–\-\.]\s/.test(l));
-  if (firstShot > 0) return lines.slice(firstShot).join('\n');
-  return script;
+
+  // Find first shot: line starting with "1 —" (including markdown bold **1 —**)
+  const firstShot = lines.findIndex(l => /^\s*\*{0,2}1\s*[—–\-]\s/.test(l));
+  const trimmed = firstShot > 0 ? lines.slice(firstShot) : lines;
+
+  // Find last numbered shot header, then keep only up to the end of that shot's content.
+  // Stop at any line that looks like a section header not part of a shot (##, "Using this", "Same ")
+  const result: string[] = [];
+  let inShots = true;
+  for (const line of trimmed) {
+    const t = line.trim();
+    // Stop collecting if we hit a non-shot section marker
+    if (inShots && (/^#{1,3}\s/.test(t) || /^using this/i.test(t) || /^same ".+rule/i.test(t))) {
+      inShots = false;
+    }
+    if (inShots) result.push(line);
+  }
+  return result.join('\n');
 }
 
 function splitIntoBlocks(script: string): string[] {
-  const cleaned = stripPreamble(script);
+  const cleaned = stripPreambleAndPostamble(script);
   const lines = cleaned.split('\n');
   const blocks: string[] = [];
   let cur: string[] = [];
@@ -61,8 +76,8 @@ function splitIntoBlocks(script: string): string[] {
     if (/^```/.test(t) || /^CHARACTERS:/i.test(t) || /^STYLE:/i.test(t)) continue;
 
     const isHeader =
-      // "1 — 0:00–0:10" or "2 — 0:10–0:20" numbered shot format
-      /^\d+\s*[—–-]\s*\d+:\d+/.test(t) ||
+      // "1 — 0:00–0:10" or "**12 — 1:50–2:00**" numbered shot format
+      /^\*{0,2}\d+\s*[—–-]\s*\d+:\d+/.test(t) ||
       // "Scene 1:" or "Scene 1 —"
       /^(scene\s*\d+\s*[:\-–])/i.test(t) ||
       // Shot 1:

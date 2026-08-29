@@ -134,6 +134,7 @@ export default function Studio() {
     setGenerating(true);
     toast.info(`Submitting ${pending.length} clip${pending.length > 1 ? 's' : ''} to Kling AI…`);
 
+    let submitted = 0;
     for (const scene of pending) {
       try {
         setScenes(prev => prev.map(s => s.id === scene.id ? { ...s, status: 'generating' } : s));
@@ -142,14 +143,21 @@ export default function Studio() {
         const { taskId } = await submitKlingTask(prompt, neg, settings.apiKey, settings.quality, settings.clipDuration);
         setScenes(prev => prev.map(s => s.id === scene.id ? { ...s, taskId } : s));
         pollScene({ ...scene, taskId });
-        await new Promise(r => setTimeout(r, 1500));
+        submitted++;
+        toast.info(`Submitted ${submitted}/${pending.length} — Scene ${scene.index + 1} queued ✓`);
+        // Wait 5s between submissions to stay within Kling's rate limit
+        await new Promise(r => setTimeout(r, 5000));
       } catch (err: any) {
         setScenes(prev => prev.map(s => s.id === scene.id ? { ...s, status: 'error', errorMessage: err.message } : s));
         toast.error(`Scene ${scene.index + 1}: ${err.message}`);
+        // On rate limit error wait longer before retrying next
+        if (err.message?.toLowerCase().includes('limit') || err.message?.toLowerCase().includes('resource')) {
+          await new Promise(r => setTimeout(r, 15000));
+        }
       }
     }
     setGenerating(false);
-    toast.success('All submitted — clips generating in background ⏳');
+    toast.success(`${submitted} clips submitted — generating in background ⏳`);
     setTab('scenes');
   }, [scenes, settings, pollScene]);
 
