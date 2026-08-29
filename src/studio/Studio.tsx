@@ -8,10 +8,10 @@ import { buildPrompt, getNegativePrompt, estimateCost } from './promptBuilder';
 import { submitKlingTask, checkKlingTask } from './klingClient';
 
 /* ─── localStorage ──────────────────────────────────────────────────────────── */
-const SK = 'kvs_settings_v1';
-const PK = 'kvs_project_v1';
+const SK = 'kvs_settings_v2';
+const PK = 'kvs_project_v2';
 
-const defaultSettings: KlingSettings = { apiKey: '', quality: 'std', clipDuration: 5 };
+const defaultSettings: KlingSettings = { apiKey: '', quality: 'std', clipDuration: 10 };
 
 function loadSettings(): KlingSettings {
   try { const s = localStorage.getItem(SK); return s ? JSON.parse(s) : defaultSettings; }
@@ -42,8 +42,8 @@ export default function Studio() {
   const [tab, setTab]                 = useState<ActiveTab>('script');
   const [title, setTitle]             = useState('My Kids Video');
   const [script, setScript]           = useState('');
-  const [selectedChars, setChars]     = useState(['poppy', 'buddy', 'mimi']);
-  const [defaultBg, setDefaultBg]     = useState('garden');
+  const [selectedChars, setChars]     = useState(['poppy', 'momo', 'quackers']);
+  const [defaultBg, setDefaultBg]     = useState('picnic');
   const [scenes, setScenes]           = useState<ParsedScene[]>([]);
   const [settings, setSettings]       = useState<KlingSettings>(loadSettings);
   const [draft, setDraft]             = useState<KlingSettings>(loadSettings);
