@@ -1,7 +1,1 @@
-{
-  "functions": {
-    "api/kling.cjs": {
-      "runtime": "nodejs18.x"
-    }
-  }
-}
+{}
