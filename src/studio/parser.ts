@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid';
 import type { ParsedScene } from './types';
-import { CHARACTERS, BACKGROUNDS } from './data';
+import { CHARACTERS } from './data';
 
 const BG_KEYWORDS: Record<string, string> = {
   garden:'garden', meadow:'garden', park:'garden', yard:'garden', outside:'garden', outdoors:'garden',

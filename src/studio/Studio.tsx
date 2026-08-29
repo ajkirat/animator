@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { nanoid } from 'nanoid';
 import { toast, Toaster } from 'sonner';
 
 import type { ParsedScene, KlingSettings, ActiveTab } from './types';
